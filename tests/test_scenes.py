@@ -41,3 +41,27 @@ def test_build_scene_windows_default_is_single_midpoint(tmp_path):
                                   keyframe_fn=fake_keyframe)  # default frames_per_scene=1
     assert grabbed == [5.0]
     assert len(windows[0].keyframes) == 1
+
+
+def test_build_scene_windows_resolves_single_shot_sentinel(tmp_path):
+    grabbed = []
+    def fake_keyframe(video_path, t_s, out_path, runner=None):
+        grabbed.append(t_s)
+        return out_path
+    # single-shot sentinel [(0,0)] -> resolved via duration_fn to (0, 12), then spread
+    windows = build_scene_windows("v.mp4", [(0.0, 0.0)], str(tmp_path),
+                                  keyframe_fn=fake_keyframe, frames_per_scene=3,
+                                  duration_fn=lambda p: 12.0)
+    assert grabbed == [3.0, 6.0, 9.0]      # fractions 1/4, 2/4, 3/4 of 12
+    assert windows[0].end_s == 12.0        # resolved duration recorded on the window
+
+
+def test_build_scene_windows_degenerate_span_no_descending(tmp_path):
+    grabbed = []
+    def fake_keyframe(video_path, t_s, out_path, runner=None):
+        grabbed.append(t_s)
+        return out_path
+    # inverted boundary -> span clamped to 0, all frames at start_s (no descending/out-of-range)
+    build_scene_windows("v.mp4", [(10.0, 5.0)], str(tmp_path),
+                        keyframe_fn=fake_keyframe, frames_per_scene=3)
+    assert grabbed == [10.0, 10.0, 10.0]
