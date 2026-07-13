@@ -1,6 +1,4 @@
 import subprocess
-import tempfile
-import os
 import uuid
 import pytest
 from celebvision.bus import Message

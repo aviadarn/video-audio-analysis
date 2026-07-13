@@ -1,4 +1,3 @@
-import pytest
 from celebvision.bus import Message
 from celebvision.errors import StageError
 from celebvision.workers.base import run_worker, WorkerContext

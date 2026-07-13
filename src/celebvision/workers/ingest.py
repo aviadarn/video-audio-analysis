@@ -3,7 +3,7 @@ import os
 import tempfile
 from celebvision.bus import Message
 from celebvision.workers.base import WorkerContext
-from celebvision.media import classify_source, ingest
+from celebvision.media import ingest
 from celebvision.models import JobSource
 from celebvision.errors import StageError
 
