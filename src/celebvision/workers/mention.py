@@ -1,6 +1,7 @@
 import json
-import tempfile
 import os
+import shutil
+import tempfile
 from celebvision.bus import Message
 from celebvision.workers.base import WorkerContext
 from celebvision.factories import build_watchlist
@@ -18,8 +19,8 @@ async def handle_mention(msg: Message, ctx: WorkerContext) -> None:
     assets = await ctx.db.get_job_assets(msg.job_id)
     if assets is None or not assets["transcript_key"]:
         raise StageError("mention", "no transcript asset")
+    tmp = tempfile.mkdtemp(prefix=f"mention-{msg.job_id}-{msg.scene_id}-")
     try:
-        tmp = tempfile.mkdtemp(prefix=f"mention-{msg.job_id}-{msg.scene_id}-")
         tpath = os.path.join(tmp, "transcript.json")
         await ctx.storage.get_file("media", assets["transcript_key"], tpath)
         with open(tpath) as f:
@@ -43,3 +44,5 @@ async def handle_mention(msg: Message, ctx: WorkerContext) -> None:
         raise
     except Exception as e:
         raise StageError("mention", str(e)) from e
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

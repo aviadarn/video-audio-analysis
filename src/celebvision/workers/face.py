@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import tempfile
 from celebvision.bus import Message
 from celebvision.workers.base import WorkerContext
@@ -14,13 +15,13 @@ async def handle_face(msg: Message, ctx: WorkerContext) -> None:
     if scene is None:
         raise StageError("face", f"scene {msg.scene_id} not found")
     job = await ctx.db.get_job(msg.job_id)
+    tmp = tempfile.mkdtemp(prefix=f"face-{msg.job_id}-{msg.scene_id}-")
     try:
         keyframes = scene["keyframes"]
         if isinstance(keyframes, str):
             import json
             keyframes = json.loads(keyframes)
         watchlist = await build_watchlist(ctx.settings, ctx.db, job["watchlist_id"])
-        tmp = tempfile.mkdtemp(prefix=f"face-{msg.job_id}-{msg.scene_id}-")
         best: dict[str, dict] = {}
         for i, key in enumerate(keyframes):
             local = os.path.join(tmp, f"kf{i}.jpg")
@@ -39,3 +40,5 @@ async def handle_face(msg: Message, ctx: WorkerContext) -> None:
         raise
     except Exception as e:
         raise StageError("face", str(e)) from e
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import tempfile
 from celebvision.bus import Message
 from celebvision.workers.base import WorkerContext
@@ -12,8 +13,8 @@ async def handle_scene(msg: Message, ctx: WorkerContext) -> None:
     assets = await ctx.db.get_job_assets(msg.job_id)
     if assets is None or not assets["video_key"]:
         raise StageError("scene", "no video asset")
+    tmp = tempfile.mkdtemp(prefix=f"scene-{msg.job_id}-")
     try:
-        tmp = tempfile.mkdtemp(prefix=f"scene-{msg.job_id}-")
         video_path = os.path.join(tmp, "video.mp4")
         await ctx.storage.get_file("media", assets["video_key"], video_path)
 
@@ -37,3 +38,5 @@ async def handle_scene(msg: Message, ctx: WorkerContext) -> None:
         raise
     except Exception as e:
         raise StageError("scene", str(e)) from e
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

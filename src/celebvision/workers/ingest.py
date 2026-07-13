@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import tempfile
 from celebvision.bus import Message
 from celebvision.workers.base import WorkerContext
@@ -13,9 +14,9 @@ async def handle_ingest(msg: Message, ctx: WorkerContext) -> None:
     if job is None:
         raise StageError("ingest", f"job {msg.job_id} not found")
     await ctx.db.set_job_status(msg.job_id, "running")
+    workdir = tempfile.mkdtemp(prefix=f"ingest-{msg.job_id}-")
     try:
         source = JobSource(kind=job["source_kind"], locator=job["source_locator"])
-        workdir = tempfile.mkdtemp(prefix=f"ingest-{msg.job_id}-")
         video_path, audio_path = await asyncio.to_thread(ingest, source, workdir)
         await ctx.storage.ensure_bucket("media")
         video_key = f"{msg.job_id}/{os.path.basename(video_path)}"
@@ -29,3 +30,5 @@ async def handle_ingest(msg: Message, ctx: WorkerContext) -> None:
         raise
     except Exception as e:
         raise StageError("ingest", str(e)) from e
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)

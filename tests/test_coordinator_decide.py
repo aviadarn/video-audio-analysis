@@ -41,3 +41,15 @@ def test_failed_job_emits_nothing():
     out = decide_next(Message(job_id="j", stage="ingest"),
                       _state(status="failed", ingest_done=True))
     assert out == []
+
+def test_done_job_emits_nothing():
+    out = decide_next(Message(job_id="j", stage="faces"),
+                      _state(status="done", expected_scene_count=2,
+                             faces_done=2, mentions_done=2))
+    assert out == []
+
+def test_zero_scenes_triggers_aggregate():
+    out = decide_next(Message(job_id="j", stage="transcribe"),
+                      _state(scenes_done=True, transcribe_done=True,
+                             expected_scene_count=0))
+    assert [m.stage for m in out] == ["aggregate"]

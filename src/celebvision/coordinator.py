@@ -16,7 +16,7 @@ class JobState:
 
 
 def decide_next(event: Message, state: JobState) -> list[Message]:
-    if state.status == "failed":
+    if state.status in ("failed", "done"):
         return []
     jid = event.job_id
     stage = event.stage
@@ -26,6 +26,8 @@ def decide_next(event: Message, state: JobState) -> list[Message]:
     if stage in ("scenes", "transcribe"):
         if state.scenes_done and state.transcribe_done \
                 and state.expected_scene_count is not None:
+            if state.expected_scene_count == 0:
+                return [Message(job_id=jid, stage="aggregate")]
             out: list[Message] = []
             for sid in range(state.expected_scene_count):
                 out.append(Message(job_id=jid, stage="faces", scene_id=sid))
