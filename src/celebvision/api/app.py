@@ -2,7 +2,7 @@
 import json
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from celebvision.config import Settings
@@ -10,6 +10,7 @@ from celebvision.db import Database
 from celebvision.bus import MessageBus, Message
 from celebvision.storage import BlobStore
 from celebvision.media import classify_source
+from celebvision import metrics
 
 
 class JobRequest(BaseModel):
@@ -80,6 +81,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="report not ready")
         data = await app.state.store.get_bytes("reports", f"{job_id}.json")
         return JSONResponse(content=json.loads(data))
+
+    @app.get("/metrics")
+    async def get_metrics():
+        return Response(content=metrics.render(), media_type=metrics.CONTENT_TYPE)
 
     return app
 
