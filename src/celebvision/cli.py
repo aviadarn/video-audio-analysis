@@ -9,6 +9,7 @@ from celebvision.llm.anthropic_client import AnthropicLLMClient
 from celebvision.watchlist.local_index import LocalWatchlistIndex
 from celebvision.models import Report
 from celebvision.eval import GroundTruth, score_report
+from celebvision.config import Settings
 
 app = typer.Typer(help="Celebrity video analysis pipeline")
 
@@ -27,13 +28,20 @@ def analyze(
     out: str = typer.Option("report.json", help="Output report path"),
     workdir: str = typer.Option("./data/work", help="Scratch dir for media"),
     keyword: list[str] = typer.Option([], help="Keyword to count (repeatable)"),
+    keyframes_per_scene: int = typer.Option(
+        None, "--keyframes-per-scene",
+        help="Keyframes sampled per scene for face matching "
+             "(default: KEYFRAMES_PER_SCENE env / 3)"),
 ):
     inference, llm, wl = _load_clients(watchlist)
+    n_kf = (keyframes_per_scene if keyframes_per_scene is not None
+            else Settings.from_env().keyframes_per_scene)
     report = run_pipeline(
         locator=source, watchlist=wl, keywords=list(keyword),
         inference=inference, llm=llm, workdir=workdir,
         job_id=str(uuid.uuid4()),
         completed_at=datetime.now(timezone.utc).isoformat(),
+        frames_per_scene=n_kf,
     )
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     with open(out, "w") as f:

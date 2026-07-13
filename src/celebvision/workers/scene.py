@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from celebvision.bus import Message
 from celebvision.workers.base import WorkerContext
-from celebvision.media import probe_duration
 from celebvision.stages.scenes import detect_scenes, build_scene_windows
 from celebvision.errors import StageError
 
@@ -19,9 +18,7 @@ async def handle_scene(msg: Message, ctx: WorkerContext) -> None:
         await ctx.storage.get_file("media", assets["video_key"], video_path)
 
         boundaries = await asyncio.to_thread(detect_scenes, video_path)
-        if boundaries == [(0.0, 0.0)]:  # single-shot sentinel -> real duration
-            boundaries = [(0.0, await asyncio.to_thread(probe_duration, video_path))]
-
+        # single-shot sentinel resolution lives in build_scene_windows (single source)
         windows = await asyncio.to_thread(
             build_scene_windows, video_path, boundaries, tmp,
             frames_per_scene=ctx.settings.keyframes_per_scene)
