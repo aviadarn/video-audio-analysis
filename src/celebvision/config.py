@@ -19,6 +19,8 @@ class Settings:
     triton_url: str = "localhost:8000"
     asr_backend: str = "stub"
     triton_model: str = "arcface"
+    max_attempts: int = 3
+    metrics_port: int = 9100
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -39,4 +41,6 @@ class Settings:
             triton_url=e.get("TRITON_URL", d.triton_url),
             asr_backend=e.get("ASR_BACKEND", d.asr_backend),
             triton_model=e.get("TRITON_MODEL", d.triton_model),
+            max_attempts=int(e.get("MAX_ATTEMPTS", d.max_attempts)),
+            metrics_port=int(e.get("METRICS_PORT", d.metrics_port)),
         )

@@ -8,6 +8,7 @@ class Message(BaseModel):
     stage: str
     scene_id: int | None = None
     payload: dict = {}
+    attempts: int = 0
 
 
 def encode(msg: Message) -> bytes:
