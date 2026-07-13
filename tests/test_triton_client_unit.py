@@ -1,8 +1,10 @@
 # tests/test_triton_client_unit.py
 from types import SimpleNamespace
 import numpy as np
+import pytest
 from celebvision.inference.triton_client import TritonFaceClient
 from celebvision.config import Settings
+from celebvision.errors import StageError
 
 
 def test_analyze_faces_maps_detection_and_embedding(monkeypatch, tmp_path):
@@ -28,3 +30,12 @@ def test_analyze_faces_maps_detection_and_embedding(monkeypatch, tmp_path):
     assert dets[0].bbox == (1.0, 2.0, 3.0, 4.0)
     assert len(dets[0].embedding) == 512
     assert abs(np.linalg.norm(dets[0].embedding) - 1.0) < 1e-5  # normalized (all-ones -> unit)
+
+
+def test_embed_raises_on_zero_norm():
+    client = TritonFaceClient(Settings.from_env({}),
+                              infer_fn=lambda blob: np.zeros((blob.shape[0], 512),
+                                                             dtype=np.float32))
+    crop = np.zeros((112, 112, 3), dtype=np.uint8)
+    with pytest.raises(StageError):
+        client._embed([crop])

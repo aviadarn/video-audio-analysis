@@ -127,6 +127,8 @@ services:
   triton-gpu:
     extends: {service: triton}
     profiles: ["gpu"]
+    # Generate the GPU model config before `--profile gpu up`:
+    #   .venv/bin/python scripts/prepare_triton_models.py --kind KIND_GPU
     deploy:
       resources:
         reservations:

@@ -1,11 +1,13 @@
 import asyncio
 import sys
+from prometheus_client import start_http_server
 from celebvision.config import Settings
 from celebvision.bus import MessageBus
 from celebvision.db import Database
 from celebvision.storage import BlobStore
 from celebvision.workers.base import WorkerContext, run_worker
 from celebvision.factories import build_inference_client, build_llm_client
+from celebvision.metrics import REGISTRY as METRICS_REGISTRY
 from celebvision.workers.ingest import handle_ingest
 from celebvision.workers.scene import handle_scene
 from celebvision.workers.transcribe import handle_transcribe
@@ -36,6 +38,7 @@ async def main(stage_topic: str) -> None:
                         inference=build_inference_client(settings),
                         llm=build_llm_client(settings), settings=settings)
     handler = HANDLERS[TOPIC_STAGE[stage_topic]]
+    start_http_server(settings.metrics_port, registry=METRICS_REGISTRY)
     try:
         await run_worker(stage_topic, bus, ctx, handler)
     finally:

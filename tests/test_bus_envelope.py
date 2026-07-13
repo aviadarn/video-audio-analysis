@@ -13,3 +13,9 @@ def test_envelope_scene_id_optional():
     m = decode(encode(Message(job_id="j1", stage="ingest")))
     assert m.scene_id is None
     assert m.payload == {}
+
+def test_envelope_attempts_default_and_roundtrip():
+    from celebvision.bus import Message, encode, decode
+    assert Message(job_id="j", stage="faces").attempts == 0
+    m = decode(encode(Message(job_id="j", stage="faces", attempts=2)))
+    assert m.attempts == 2

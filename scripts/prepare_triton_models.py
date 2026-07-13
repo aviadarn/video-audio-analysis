@@ -49,7 +49,7 @@ def _introspect(onnx_path):
     return inp.name, in_dims, out.name, out_dims
 
 
-def prepare(model_repo="model_repository", cache_dir=None):
+def prepare(model_repo="model_repository", cache_dir=None, kind="KIND_CPU"):
     _ensure_buffalo()
     src = (Path(cache_dir) if cache_dir else _BUFFALO_DIR) / _ARCFACE_ONNX
     dst_dir = Path(model_repo) / "arcface" / "1"
@@ -60,10 +60,14 @@ def prepare(model_repo="model_repository", cache_dir=None):
     in_name, in_dims, out_name, out_dims = _introspect(str(model_path))
     config_path = Path(model_repo) / "arcface" / "config.pbtxt"
     config_path.write_text(
-        render_config_pbtxt("arcface", in_name, in_dims, out_name, out_dims))
+        render_config_pbtxt("arcface", in_name, in_dims, out_name, out_dims, kind=kind))
     return str(model_path), str(config_path)
 
 
 if __name__ == "__main__":
-    mp, cp = prepare()
+    import sys
+    kind = "KIND_CPU"
+    if "--kind" in sys.argv:
+        kind = sys.argv[sys.argv.index("--kind") + 1]
+    mp, cp = prepare(kind=kind)
     print(f"model: {mp}\nconfig: {cp}")

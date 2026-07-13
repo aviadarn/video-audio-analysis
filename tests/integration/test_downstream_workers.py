@@ -65,5 +65,7 @@ async def test_downstream_pipeline_with_stub(tmp_path):
         assert report["job_id"] == jid
         ids = [c["canonical_id"] for c in report["celebrity_index"]]
         assert "messi" in ids
+        assert report["completed_at"] != ""
+        assert report["duration_s"] > 0.0
     finally:
         await db.close()

@@ -34,3 +34,12 @@ def test_settings_triton_env_overrides():
     s = Settings.from_env({"TRITON_URL": "triton:8000", "ASR_BACKEND": "local"})
     assert s.triton_url == "triton:8000"
     assert s.asr_backend == "local"
+
+def test_settings_reliability_defaults():
+    from celebvision.config import Settings
+    s = Settings.from_env({})
+    assert s.max_attempts == 3
+    assert s.metrics_port == 9100
+    s2 = Settings.from_env({"MAX_ATTEMPTS": "5", "METRICS_PORT": "9200"})
+    assert s2.max_attempts == 5
+    assert s2.metrics_port == 9200

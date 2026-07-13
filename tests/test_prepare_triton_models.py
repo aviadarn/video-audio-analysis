@@ -38,3 +38,11 @@ def test_prepared_model_has_dynamic_batch(tmp_path):
     assert out0.dim_param != "" or out0.dim_value == 0  # dynamic batch, not fixed 1
     in0 = m.graph.input[0].type.tensor_type.shape.dim[0]
     assert in0.dim_param != "" or in0.dim_value == 0
+
+
+def test_render_config_pbtxt_gpu_kind():
+    from scripts.prepare_triton_models import render_config_pbtxt
+    txt = render_config_pbtxt("arcface", "input.1", [3, 112, 112], "683", [512],
+                              kind="KIND_GPU")
+    assert "KIND_GPU" in txt
+    assert "KIND_CPU" not in txt

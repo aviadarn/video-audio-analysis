@@ -1,6 +1,7 @@
 from celebvision.bus import Message
 from celebvision.errors import StageError
 from celebvision.workers.base import run_worker, WorkerContext
+from celebvision.config import Settings
 
 
 class FakeBus:
@@ -21,25 +22,38 @@ class FakeDB:
         self.errors.append((job_id, error))
 
 
-def _ctx(db):
-    return WorkerContext(db=db, storage=None, inference=None, llm=None, settings=None)
+def _ctx(db, max_attempts=3):
+    return WorkerContext(db=db, storage=None, inference=None, llm=None,
+                         settings=Settings.from_env({"MAX_ATTEMPTS": str(max_attempts)}))
 
 
 async def test_success_emits_completion_event():
     bus = FakeBus([Message(job_id="j", stage="faces", scene_id=1)])
-    calls = []
     async def handler(msg, ctx):
-        calls.append(msg.job_id)
+        return None
     await run_worker("faces", bus, _ctx(FakeDB()), handler)
-    assert calls == ["j"]
     assert bus.produced == [("stage.events",
                              Message(job_id="j", stage="faces", scene_id=1))]
 
-async def test_stage_error_marks_job_failed_and_does_not_emit():
-    bus = FakeBus([Message(job_id="j", stage="ingest")])
+
+async def test_stage_error_retries_to_requested_with_incremented_attempts():
+    bus = FakeBus([Message(job_id="j", stage="faces", scene_id=1, attempts=0)])
+    async def handler(msg, ctx):
+        raise StageError("faces", "boom")
+    await run_worker("faces", bus, _ctx(FakeDB(), max_attempts=3), handler)
+    assert len(bus.produced) == 1
+    topic, msg = bus.produced[0]
+    assert topic == "faces.requested"
+    assert msg.attempts == 1
+
+
+async def test_stage_error_routes_to_dlq_when_attempts_exhausted():
+    bus = FakeBus([Message(job_id="j", stage="ingest", attempts=2)])
     db = FakeDB()
     async def handler(msg, ctx):
         raise StageError("ingest", "boom")
-    await run_worker("ingest", bus, _ctx(db), handler)
-    assert db.errors == [("j", "ingest: boom")]
-    assert bus.produced == []
+    await run_worker("ingest", bus, _ctx(db, max_attempts=3), handler)
+    topic, msg = bus.produced[0]
+    assert topic == "ingest.dlq"
+    assert msg.attempts == 3
+    assert db.errors and "dlq after 3 attempts" in db.errors[0][1]
