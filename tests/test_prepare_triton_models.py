@@ -26,3 +26,15 @@ def test_prepare_copies_model_and_writes_config(tmp_path):
     assert 'name: "arcface"' in cfg
     assert 'name: "input.1"' in cfg  # verified ArcFace input tensor name
     assert 'name: "683"' in cfg      # verified ArcFace output tensor name
+
+
+@pytest.mark.slow
+def test_prepared_model_has_dynamic_batch(tmp_path):
+    import onnx
+    from scripts.prepare_triton_models import prepare
+    model_path, _ = prepare(model_repo=str(tmp_path))
+    m = onnx.load(model_path)
+    out0 = m.graph.output[0].type.tensor_type.shape.dim[0]
+    assert out0.dim_param != "" or out0.dim_value == 0  # dynamic batch, not fixed 1
+    in0 = m.graph.input[0].type.tensor_type.shape.dim[0]
+    assert in0.dim_param != "" or in0.dim_value == 0

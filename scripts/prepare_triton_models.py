@@ -29,6 +29,16 @@ def _ensure_buffalo():
     app.prepare(ctx_id=-1, det_size=(640, 640))
 
 
+def _make_batchable(model_path):
+    import onnx
+    m = onnx.load(model_path)
+    for t in list(m.graph.input) + list(m.graph.output):
+        dim0 = t.type.tensor_type.shape.dim[0]
+        dim0.ClearField("dim_value")
+        dim0.dim_param = "N"
+    onnx.save(m, model_path)
+
+
 def _introspect(onnx_path):
     import onnx
     m = onnx.load(onnx_path)
@@ -46,6 +56,7 @@ def prepare(model_repo="model_repository", cache_dir=None):
     dst_dir.mkdir(parents=True, exist_ok=True)
     model_path = dst_dir / "model.onnx"
     shutil.copyfile(src, model_path)
+    _make_batchable(str(model_path))
     in_name, in_dims, out_name, out_dims = _introspect(str(model_path))
     config_path = Path(model_repo) / "arcface" / "config.pbtxt"
     config_path.write_text(
