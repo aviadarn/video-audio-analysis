@@ -19,7 +19,8 @@ def test_ingest_downloads_youtube_then_extracts_audio(tmp_path):
         calls.append(cmd)
         # simulate ffmpeg producing the output file (last arg)
         open(cmd[-1], "w").close()
-        class R: returncode = 0
+        class R:
+            returncode = 0
         return R()
 
     src = JobSource(kind="youtube", locator="https://youtu.be/abc")
@@ -37,7 +38,8 @@ def test_ingest_file_source_skips_download(tmp_path):
     def boom(*a, **k): raise AssertionError("should not download")
     def fake_runner(cmd, check):
         open(cmd[-1], "w").close()
-        class R: returncode = 0
+        class R:
+            returncode = 0
         return R()
     src = JobSource(kind="file", locator=vid)
     video, audio = ingest(src, str(tmp_path), downloader=boom, runner=fake_runner)
@@ -48,7 +50,8 @@ def test_extract_keyframe_builds_ffmpeg_command(tmp_path):
     def fake_runner(cmd, check):
         seen["cmd"] = cmd
         open(cmd[-1], "w").close()
-        class R: returncode = 0
+        class R:
+            returncode = 0
         return R()
     out = extract_keyframe("v.mp4", 12.5, str(tmp_path / "k.jpg"),
                            runner=fake_runner)
