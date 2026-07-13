@@ -110,3 +110,37 @@ services:
     environment: *appenv
     depends_on:
       init: {condition: service_completed_successfully}
+
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.08-py3
+    command: tritonserver --model-repository=/models
+    volumes:
+      - ./model_repository:/models
+    ports: ["8000:8000", "8001:8001", "8002:8002"]
+    profiles: ["triton", "gpu"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc ':> /dev/tcp/localhost/8000' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  triton-gpu:
+    extends: {service: triton}
+    profiles: ["gpu"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - {driver: nvidia, count: all, capabilities: [gpu]}
+
+  worker-face-triton:
+    build: {context: ., dockerfile: docker/Dockerfile}
+    command: ["worker", "faces"]
+    profiles: ["triton", "gpu"]
+    environment:
+      <<: *appenv
+      INFERENCE_BACKEND: triton
+      TRITON_URL: triton:8000
+    depends_on:
+      init: {condition: service_completed_successfully}
+      triton: {condition: service_started}
