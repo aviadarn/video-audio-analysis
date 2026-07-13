@@ -16,6 +16,9 @@ class Settings:
     whisper_model: str = "small"
     face_model: str = "buffalo_l"
     watchlist_path: str = "./data/watchlist.npz"
+    triton_url: str = "localhost:8000"
+    asr_backend: str = "stub"
+    triton_model: str = "arcface"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -33,4 +36,7 @@ class Settings:
             whisper_model=e.get("WHISPER_MODEL", d.whisper_model),
             face_model=e.get("FACE_MODEL", d.face_model),
             watchlist_path=e.get("WATCHLIST_PATH", d.watchlist_path),
+            triton_url=e.get("TRITON_URL", d.triton_url),
+            asr_backend=e.get("ASR_BACKEND", d.asr_backend),
+            triton_model=e.get("TRITON_MODEL", d.triton_model),
         )

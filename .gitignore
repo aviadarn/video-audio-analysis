@@ -11,3 +11,4 @@ dist/
 *.wav
 *.mp4
 *.jpg
+model_repository/**/model.onnx

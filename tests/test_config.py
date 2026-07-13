@@ -21,3 +21,16 @@ def test_stage_error_str():
     assert str(e) == "ingest: download failed"
     assert e.stage == "ingest"
     assert e.reason == "download failed"
+
+def test_settings_triton_defaults():
+    from celebvision.config import Settings
+    s = Settings.from_env({})
+    assert s.triton_url == "localhost:8000"
+    assert s.asr_backend == "stub"
+    assert s.triton_model == "arcface"
+
+def test_settings_triton_env_overrides():
+    from celebvision.config import Settings
+    s = Settings.from_env({"TRITON_URL": "triton:8000", "ASR_BACKEND": "local"})
+    assert s.triton_url == "triton:8000"
+    assert s.asr_backend == "local"

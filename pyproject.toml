@@ -34,6 +34,7 @@ service = [
     "pgvector>=0.3",
 ]
 media = ["scenedetect>=0.6.3", "yt-dlp>=2024.4.9"]
+triton = ["tritonclient[http]>=2.40", "onnx>=1.16"]
 
 [project.scripts]
 celebvision = "celebvision.cli:app"
