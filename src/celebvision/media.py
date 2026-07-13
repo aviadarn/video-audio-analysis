@@ -41,3 +41,15 @@ def extract_keyframe(video_path: str, t_s: float, out_path: str,
     runner(["ffmpeg", "-y", "-ss", str(t_s), "-i", video_path,
             "-frames:v", "1", "-q:v", "2", out_path], check=True)
     return out_path
+
+
+def probe_duration(video_path: str, runner=subprocess.run) -> float:
+    try:
+        result = runner(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", video_path],
+            capture_output=True, text=True, check=True,
+        )
+        return float(result.stdout.strip())
+    except Exception:
+        return 0.0
