@@ -43,3 +43,8 @@ def test_settings_reliability_defaults():
     s2 = Settings.from_env({"MAX_ATTEMPTS": "5", "METRICS_PORT": "9200"})
     assert s2.max_attempts == 5
     assert s2.metrics_port == 9200
+
+def test_settings_keyframes_per_scene():
+    from celebvision.config import Settings
+    assert Settings.from_env({}).keyframes_per_scene == 3
+    assert Settings.from_env({"KEYFRAMES_PER_SCENE": "5"}).keyframes_per_scene == 5

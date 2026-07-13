@@ -21,6 +21,7 @@ class Settings:
     triton_model: str = "arcface"
     max_attempts: int = 3
     metrics_port: int = 9100
+    keyframes_per_scene: int = 3
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -43,4 +44,5 @@ class Settings:
             triton_model=e.get("TRITON_MODEL", d.triton_model),
             max_attempts=int(e.get("MAX_ATTEMPTS", d.max_attempts)),
             metrics_port=int(e.get("METRICS_PORT", d.metrics_port)),
+            keyframes_per_scene=int(e.get("KEYFRAMES_PER_SCENE", d.keyframes_per_scene)),
         )

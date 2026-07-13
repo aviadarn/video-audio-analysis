@@ -22,8 +22,9 @@ async def handle_scene(msg: Message, ctx: WorkerContext) -> None:
         if boundaries == [(0.0, 0.0)]:  # single-shot sentinel -> real duration
             boundaries = [(0.0, await asyncio.to_thread(probe_duration, video_path))]
 
-        windows = await asyncio.to_thread(build_scene_windows, video_path,
-                                          boundaries, tmp)
+        windows = await asyncio.to_thread(
+            build_scene_windows, video_path, boundaries, tmp,
+            frames_per_scene=ctx.settings.keyframes_per_scene)
         await ctx.storage.ensure_bucket("keyframes")
         for w in windows:
             keys = []
