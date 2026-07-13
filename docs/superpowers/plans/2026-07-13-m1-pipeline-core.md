@@ -19,6 +19,8 @@
 - Tests that require real models/network are marked `@pytest.mark.slow` and excluded from the default `pytest` run.
 - Lint/format: **ruff**. Type hints required on all public functions.
 - Commit after every task (Conventional Commits).
+- **Interpreter:** a project venv created with `python3.13` lives at `.venv/`. In every step, `python` means `.venv/bin/python` and `pip` means `.venv/bin/pip` (shell state does not persist between commands, so use the explicit paths — do not rely on `source .venv/bin/activate`).
+- **Dependency split:** base `dependencies` are light (pydantic, typer, numpy) so `pip install -e '.[dev]'` is fast and needs no C compilation. Heavy ML runtime libs (faster-whisper, insightface, onnxruntime, opencv, scenedetect, yt-dlp, anthropic) live in the optional `local` extra — they are imported lazily and are NOT needed for any unit test. Do not add them to base `dependencies`.
 
 ---
 
@@ -68,6 +70,12 @@ dependencies = [
     "pydantic>=2.6",
     "typer>=0.12",
     "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+# Heavy ML runtime backends — imported lazily, only needed for real (non-test) runs.
+local = [
     "faster-whisper>=1.0",
     "insightface>=0.7.3",
     "onnxruntime>=1.17",
@@ -76,9 +84,6 @@ dependencies = [
     "yt-dlp>=2024.4.9",
     "anthropic>=0.34",
 ]
-
-[project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.4"]
 
 [project.scripts]
 celebvision = "celebvision.cli:app"
@@ -113,6 +118,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+.superpowers/
 *.egg-info/
 build/
 dist/
@@ -123,10 +129,10 @@ dist/
 *.jpg
 ```
 
-- [ ] **Step 5: Install dev deps and run test to verify it passes**
+- [ ] **Step 5: Create venv, install dev deps, run test to verify it passes**
 
-Run: `pip install -e '.[dev]'` then `python -m pytest tests/test_version.py -v`
-Expected: PASS (1 passed)
+Run: `python3.13 -m venv .venv && .venv/bin/pip install -U pip && .venv/bin/pip install -e '.[dev]'` then `.venv/bin/python -m pytest tests/test_version.py -v`
+Expected: PASS (1 passed). (`.venv/` is git-ignored via the `.venv/` entry.)
 
 - [ ] **Step 6: Commit**
 
@@ -1714,7 +1720,9 @@ git commit -m "feat: add pipeline orchestrator and analyze/enroll CLI"
 
 ## Manual end-to-end verification (after Task 12)
 
-Real run against YouTube (requires ffmpeg installed, `ANTHROPIC_API_KEY` set, models download on first use). This is the acceptance check, not an automated test:
+Real run against YouTube. Prerequisites: install the ML backend + ffmpeg first
+(`.venv/bin/pip install -e '.[local]'`; `brew install ffmpeg`), set `ANTHROPIC_API_KEY`;
+models download on first use. This is the acceptance check, not an automated test:
 
 ```bash
 # 1. Enroll a couple of celebrities from reference photos
