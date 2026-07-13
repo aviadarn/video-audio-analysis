@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "celebvision"
+version = "0.1.0"
+description = "Celebrity video analysis pipeline (spoken mentions + on-screen faces)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "typer>=0.12",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+# Heavy ML runtime backends — imported lazily, only needed for real (non-test) runs.
+local = [
+    "faster-whisper>=1.0",
+    "insightface>=0.7.3",
+    "onnxruntime>=1.17",
+    "opencv-python-headless>=4.9",
+    "scenedetect>=0.6.3",
+    "yt-dlp>=2024.4.9",
+    "anthropic>=0.34",
+]
+
+[project.scripts]
+celebvision = "celebvision.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/celebvision"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+markers = ["slow: requires real models or network (deselected by default)"]
+addopts = "-m 'not slow'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
