@@ -6,7 +6,9 @@ from celebvision.storage import BlobStore
 
 TOPICS = ["ingest.requested", "scenes.requested", "transcribe.requested",
           "faces.requested", "mentions.requested", "aggregate.requested",
-          "stage.events"]
+          "stage.events",
+          "ingest.dlq", "scenes.dlq", "transcribe.dlq",
+          "faces.dlq", "mentions.dlq", "aggregate.dlq"]
 BUCKETS = ["media", "keyframes", "reports"]
 
 
