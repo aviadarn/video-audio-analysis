@@ -66,6 +66,14 @@ def test_extract_json_raises_on_garbage():
     with pytest.raises(LLMResponseError):
         client._extract_json("Sorry, I cannot help with that.")
 
+def test_extract_json_tolerates_trailing_text():
+    # haiku sometimes appends prose after the JSON object -> must not crash
+    client = AnthropicLLMClient.__new__(AnthropicLLMClient)
+    raw = ('Here is the result:\n{"mentions": [], "keyword_hits": []}\n\n'
+           'Let me know if you need anything else.')
+    payload = client._extract_json(raw)
+    assert payload == {"mentions": [], "keyword_hits": []}
+
 def test_extract_scene_mentions_empty_text_skips_llm():
     class BoomLLM:
         def extract_mentions(self, *a, **k):
