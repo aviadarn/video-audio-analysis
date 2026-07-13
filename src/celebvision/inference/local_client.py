@@ -39,4 +39,27 @@ class LocalInferenceClient:
         segments, _info = model.transcribe(audio_path, word_timestamps=True)
         return self._to_transcript(list(segments))
 
-    # analyze_faces added in Task 6
+    def _load_face(self):
+        if self._face is None:
+            from insightface.app import FaceAnalysis
+            app = FaceAnalysis(name=self._face_model_name,
+                               providers=["CPUExecutionProvider"])
+            app.prepare(ctx_id=-1, det_size=(640, 640))
+            self._face = app
+        return self._face
+
+    def _to_face_detections(self, faces) -> list[FaceDetection]:
+        dets: list[FaceDetection] = []
+        for f in faces:
+            bbox = tuple(float(x) for x in f.bbox)  # (x1, y1, x2, y2)
+            dets.append(FaceDetection(bbox=bbox,
+                                      embedding=[float(x) for x in f.normed_embedding]))
+        return dets
+
+    def analyze_faces(self, image_path: str) -> list[FaceDetection]:
+        import cv2
+        app = self._load_face()
+        img = cv2.imread(image_path)
+        if img is None:
+            return []
+        return self._to_face_detections(app.get(img))
