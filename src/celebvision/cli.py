@@ -7,6 +7,8 @@ from celebvision.enroll import enroll_identity
 from celebvision.inference.local_client import LocalInferenceClient
 from celebvision.llm.anthropic_client import AnthropicLLMClient
 from celebvision.watchlist.local_index import LocalWatchlistIndex
+from celebvision.models import Report
+from celebvision.eval import GroundTruth, score_report
 
 app = typer.Typer(help="Celebrity video analysis pipeline")
 
@@ -57,6 +59,22 @@ def enroll(
     enroll_identity(index, inference, canonical_id, name, list(alias), image_paths)
     index.save(out)
     typer.echo(f"enrolled {name} ({len(image_paths)} images) -> {out}")
+
+
+@app.command()
+def eval(
+    report: str = typer.Option(..., help="Path to a report.json"),
+    truth: str = typer.Option(..., help="Path to a ground-truth.json"),
+    out: str = typer.Option("eval.json", help="Output EvalResult path"),
+):
+    with open(report) as f:
+        rep = Report.model_validate_json(f.read())
+    with open(truth) as f:
+        gt = GroundTruth.model_validate_json(f.read())
+    result = score_report(rep, gt)
+    with open(out, "w") as f:
+        f.write(result.model_dump_json(indent=2))
+    typer.echo(f"combined F1={result.video['combined'].f1:.3f} -> {out}")
 
 
 if __name__ == "__main__":
