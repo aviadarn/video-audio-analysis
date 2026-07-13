@@ -32,6 +32,7 @@ async def run_worker(stage: str, bus: MessageBus, ctx: WorkerContext,
             await handler(msg, ctx)
         except StageError as e:
             metrics.record_failed(stage)
+            metrics.observe_duration(stage, time.monotonic() - start)
             attempts = msg.attempts + 1
             if attempts < ctx.settings.max_attempts:
                 metrics.record_retried(stage)

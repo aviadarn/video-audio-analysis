@@ -21,7 +21,7 @@ class ModalityScore(BaseModel):
 class EvalResult(BaseModel):
     job_id: str
     video: dict[str, ModalityScore]
-    scene_mean_f1: float | None
+    scene_mean_f1: float | None = None
 
 
 def _prf(expected: set[str], detected: set[str]) -> ModalityScore:
@@ -56,6 +56,7 @@ def score_report(report: Report, gt: GroundTruth) -> EvalResult:
                     | {f.canonical_id for f in s.onscreen_faces}
                     for s in report.scenes}
         f1s = []
+        # by design: only scenes present in both report and ground truth (spec §5)
         for sid, exp in gt.expected_by_scene.items():
             if sid in by_scene:
                 f1s.append(_prf(set(exp), by_scene[sid]).f1)
