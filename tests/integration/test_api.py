@@ -1,4 +1,5 @@
 # tests/integration/test_api.py
+import uuid
 import pytest
 from httpx import AsyncClient, ASGITransport
 from celebvision.api.app import create_app
@@ -42,10 +43,15 @@ async def test_post_job_creates_row_and_emits_ingest():
     await bus.start()
     try:
         seen = False
-        async for m in bus.stream(["ingest.requested"], group="test-api-verify"):
+        count = 0
+        async for m in bus.stream(["ingest.requested"],
+                                  group=f"test-api-verify-{uuid.uuid4().hex[:8]}"):
+            count += 1
             if m.job_id == jid:
                 seen = True
-            break
+                break
+            if count >= 1000:
+                break
         assert seen
     finally:
         await bus.stop()
