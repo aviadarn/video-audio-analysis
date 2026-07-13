@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 from celebvision.config import Settings
 from celebvision.interfaces import FaceDetection
@@ -46,4 +47,31 @@ class TritonFaceClient:
     def transcribe(self, audio_path: str):
         raise NotImplementedError("TritonFaceClient does not transcribe")
 
-    # analyze_faces added in Task 5
+    def _load_detector(self):
+        if self._detector is None:
+            from insightface.app import FaceAnalysis
+            app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+            app.prepare(ctx_id=-1, det_size=(640, 640))
+            self._detector = app
+        return self._detector
+
+    def analyze_faces(self, image_path: str) -> list[FaceDetection]:
+        import cv2
+        from insightface.utils.face_align import norm_crop
+        try:
+            img = cv2.imread(image_path)
+            if img is None:
+                return []
+            faces = self._load_detector().get(img)
+            if not faces:
+                return []
+            crops = [norm_crop(img, landmark=f.kps, image_size=112) for f in faces]
+            embeddings = self._embed(crops)
+            return [
+                FaceDetection(bbox=tuple(float(x) for x in f.bbox), embedding=emb)
+                for f, emb in zip(faces, embeddings)
+            ]
+        except StageError:
+            raise
+        except Exception as e:
+            raise StageError("face", str(e)) from e
