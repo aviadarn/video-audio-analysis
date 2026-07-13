@@ -11,17 +11,27 @@ class TritonFaceClient:
         self._infer_fn = infer_fn
         self._detector = detector
         self._client = None
+        self._in_name = None
+        self._out_name = None
+
+    def _ensure_ready(self, client):
+        if not client.is_model_ready(self._settings.triton_model):
+            raise StageError("face", f"triton model {self._settings.triton_model} not ready")
+        if self._in_name is None:
+            meta = client.get_model_metadata(self._settings.triton_model)
+            self._in_name = meta["inputs"][0]["name"]
+            self._out_name = meta["outputs"][0]["name"]
 
     def _triton_infer(self, blob: np.ndarray) -> np.ndarray:
         import tritonclient.http as httpclient
         if self._client is None:
             self._client = httpclient.InferenceServerClient(url=self._settings.triton_url)
-        inp = httpclient.InferInput("input.1", blob.shape, "FP32")
+        self._ensure_ready(self._client)
+        inp = httpclient.InferInput(self._in_name, blob.shape, "FP32")
         inp.set_data_from_numpy(blob)
-        out = httpclient.InferRequestedOutput("683")
-        resp = self._client.infer(self._settings.triton_model, inputs=[inp],
-                                  outputs=[out])
-        return resp.as_numpy("683")
+        out = httpclient.InferRequestedOutput(self._out_name)
+        resp = self._client.infer(self._settings.triton_model, inputs=[inp], outputs=[out])
+        return resp.as_numpy(self._out_name)
 
     def _infer(self, blob: np.ndarray) -> np.ndarray:
         fn = self._infer_fn if self._infer_fn is not None else self._triton_infer
@@ -40,7 +50,9 @@ class TritonFaceClient:
         out = []
         for row in feats:
             n = float(np.linalg.norm(row))
-            out.append((row / n).tolist() if n > 0 else row.tolist())
+            if n <= 0.0:
+                raise StageError("face", "zero-norm embedding from Triton")
+            out.append((row / n).tolist())
         return out
 
     def transcribe(self, audio_path: str):
