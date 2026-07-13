@@ -37,11 +37,13 @@ class BlobStore:
                 return await stream.read()
 
     async def put_file(self, bucket: str, key: str, path: str) -> str:
-        with open(path, "rb") as f:
-            return await self.put_bytes(bucket, key, f.read())
+        async with self._client() as s3:
+            with open(path, "rb") as f:
+                await s3.upload_fileobj(f, bucket, key)
+        return f"{bucket}/{key}"
 
     async def get_file(self, bucket: str, key: str, dest: str) -> str:
-        data = await self.get_bytes(bucket, key)
-        with open(dest, "wb") as f:
-            f.write(data)
+        async with self._client() as s3:
+            with open(dest, "wb") as f:
+                await s3.download_fileobj(bucket, key, f)
         return dest
