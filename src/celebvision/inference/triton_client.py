@@ -31,7 +31,6 @@ class TritonFaceClient:
             raise StageError("face", f"triton infer failed: {e}") from e
 
     def _preprocess(self, crops):
-        import cv2
         return cv2.dnn.blobFromImages(
             crops, 1.0 / 127.5, (112, 112), (127.5, 127.5, 127.5), swapRB=True)
 
@@ -56,7 +55,6 @@ class TritonFaceClient:
         return self._detector
 
     def analyze_faces(self, image_path: str) -> list[FaceDetection]:
-        import cv2
         from insightface.utils.face_align import norm_crop
         try:
             img = cv2.imread(image_path)
