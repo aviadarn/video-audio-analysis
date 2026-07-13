@@ -1,7 +1,7 @@
 import json
 import logging
 from io import StringIO
-from celebvision.logging import stage_record, get_logger, log_stage
+from celebvision.logging import stage_record, log_stage
 
 
 def test_stage_record_shape():

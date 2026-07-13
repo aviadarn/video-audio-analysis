@@ -13,8 +13,10 @@ def test_eval_command_writes_result(tmp_path):
             {"name": "Messi", "canonical_id": "messi", "scenes": [0],
              "modalities": ["audio"]}]}
     truth = {"job_id": "j1", "expected": ["messi", "ronaldo"]}
-    rp = tmp_path / "report.json"; rp.write_text(json.dumps(report))
-    tp = tmp_path / "truth.json"; tp.write_text(json.dumps(truth))
+    rp = tmp_path / "report.json"
+    rp.write_text(json.dumps(report))
+    tp = tmp_path / "truth.json"
+    tp.write_text(json.dumps(truth))
     out = tmp_path / "eval.json"
     result = runner.invoke(app, ["eval", "--report", str(rp), "--truth", str(tp),
                                  "--out", str(out)])
