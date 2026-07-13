@@ -9,13 +9,15 @@ from celebvision.models import Report
 
 def run_pipeline(locator: str, watchlist: WatchlistIndex, keywords: list[str],
                  inference: InferenceClient, llm: LLMClient, workdir: str,
-                 job_id: str, completed_at: str, face_threshold: float = 0.35) -> Report:
+                 job_id: str, completed_at: str, face_threshold: float = 0.35,
+                 frames_per_scene: int = 1) -> Report:
     source = classify_source(locator)
     video_path, audio_path = ingest(source, workdir)
     transcript = inference.transcribe(audio_path)
     boundaries = detect_scenes(video_path)
     windows = build_scene_windows(video_path, boundaries, workdir,
-                                  keyframe_fn=extract_keyframe)
+                                  keyframe_fn=extract_keyframe,
+                                  frames_per_scene=frames_per_scene)
 
     scene_reports = []
     for scene in windows:
