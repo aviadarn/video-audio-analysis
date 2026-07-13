@@ -1,8 +1,9 @@
+import pytest
 from celebvision.stages.mentions import scene_transcript_text, extract_scene_mentions
 from celebvision.stages.scenes import SceneWindow
 from celebvision.interfaces import Transcript, TranscriptSegment, Word, MentionExtraction
 from celebvision.models import SpokenMention, KeywordHit
-from celebvision.llm.anthropic_client import AnthropicLLMClient
+from celebvision.llm.anthropic_client import AnthropicLLMClient, LLMResponseError
 
 
 def _transcript():
@@ -45,12 +46,30 @@ def test_parse_response_maps_json():
                "keyword_hits": [{"keyword": "scored", "count": 2,
                                  "spans": ["a", "b"]}]}
     client = AnthropicLLMClient.__new__(AnthropicLLMClient)
-    result = client._parse_response(payload, ["scored"])
+    result = client._parse_response(payload)
     assert result.mentions[0].canonical_id == "messi"
     assert result.keyword_hits[0].count == 2
 
 def test_parse_response_tolerates_missing_keys():
     client = AnthropicLLMClient.__new__(AnthropicLLMClient)
-    result = client._parse_response({}, [])
+    result = client._parse_response({})
     assert result.mentions == []
     assert result.keyword_hits == []
+
+def test_extract_json_strips_markdown_fence():
+    client = AnthropicLLMClient.__new__(AnthropicLLMClient)
+    payload = client._extract_json('```json\n{"mentions": [], "keyword_hits": []}\n```')
+    assert payload == {"mentions": [], "keyword_hits": []}
+
+def test_extract_json_raises_on_garbage():
+    client = AnthropicLLMClient.__new__(AnthropicLLMClient)
+    with pytest.raises(LLMResponseError):
+        client._extract_json("Sorry, I cannot help with that.")
+
+def test_extract_scene_mentions_empty_text_skips_llm():
+    class BoomLLM:
+        def extract_mentions(self, *a, **k):
+            raise AssertionError("LLM must not be called on empty text")
+    mentions, hits = extract_scene_mentions("   ", FakeWatchlist(), ["scored"], BoomLLM())
+    assert mentions == []
+    assert hits == []

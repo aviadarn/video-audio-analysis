@@ -2,6 +2,11 @@ import json
 from celebvision.interfaces import MentionExtraction
 from celebvision.models import SpokenMention, KeywordHit
 
+
+class LLMResponseError(ValueError):
+    """Raised when the model response is not valid JSON."""
+
+
 _PROMPT = """You are extracting celebrity mentions and keyword hits from a transcript.
 
 Only report a celebrity if it matches one of the watchlist identities (by name or alias).
@@ -34,7 +39,24 @@ class AnthropicLLMClient:
                 else Anthropic()
         return self._client
 
-    def _parse_response(self, payload: dict, keywords: list[str]) -> MentionExtraction:
+    def _extract_json(self, raw: str) -> dict:
+        text = raw.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as e:
+            raise LLMResponseError(f"LLM did not return valid JSON: {e}") from e
+        if not isinstance(payload, dict):
+            raise LLMResponseError("LLM response JSON is not an object")
+        return payload
+
+    def _parse_response(self, payload: dict) -> MentionExtraction:
         mentions = [SpokenMention(**m) for m in payload.get("mentions", [])]
         hits = [KeywordHit(**h) for h in payload.get("keyword_hits", [])]
         return MentionExtraction(mentions=mentions, keyword_hits=hits)
@@ -51,5 +73,5 @@ class AnthropicLLMClient:
             messages=[{"role": "user", "content": prompt}],
         )
         raw = msg.content[0].text
-        payload = json.loads(raw)
-        return self._parse_response(payload, keywords)
+        payload = self._extract_json(raw)
+        return self._parse_response(payload)

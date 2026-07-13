@@ -49,7 +49,7 @@ class LocalWatchlistIndex:
     @classmethod
     def load(cls, path: str) -> "LocalWatchlistIndex":
         data = np.load(path, allow_pickle=False)
-        meta = json.loads(str(data["meta"]))
+        meta = json.loads(data["meta"].item())
         idx = cls(meta["watchlist_id"])
         idx._identities = meta["identities"]
         idx._row_id = meta["row_id"]
