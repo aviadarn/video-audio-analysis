@@ -40,16 +40,14 @@ class AnthropicLLMClient:
         return self._client
 
     def _extract_json(self, raw: str) -> dict:
-        text = raw.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
+        # Decode the first JSON object in the response, tolerating markdown
+        # fences, leading prose, and trailing text/commentary the model may
+        # append after the object (raw_decode stops at the object's end).
+        start = raw.find("{")
+        if start == -1:
+            raise LLMResponseError("LLM did not return valid JSON: no object found")
         try:
-            payload = json.loads(text)
+            payload, _ = json.JSONDecoder().raw_decode(raw[start:])
         except json.JSONDecodeError as e:
             raise LLMResponseError(f"LLM did not return valid JSON: {e}") from e
         if not isinstance(payload, dict):
